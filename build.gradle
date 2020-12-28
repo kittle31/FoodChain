@@ -1,0 +1,104 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
+
+buildscript {
+    ext {
+        springBootVersion = '2.0.5.RELEASE'
+    }
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+    }
+}
+
+plugins {
+    id "com.gorylenko.gradle-git-properties" version "1.5.1"
+    id "org.flywaydb.flyway" version "5.1.4"
+}
+
+apply plugin: 'java'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+
+loadConfiguration()
+
+def loadConfiguration(){
+    def environment = hasProperty('env') ? env : 'local'
+    project.ext.env = environment
+
+    println "Environment is set to " + project.ext.env
+
+    // env variables are set by concourse
+    project.ext.ownerPw = System.env['OWNER_PASSWORD']
+    project.ext.plsqlPw = System.env['PLSQL_PASSWORD']
+
+    if (environment == 'local'){
+        project.ext.dbUrl = 'jdbc:oracle:thin:@//n2c3localdb:1521/ORCLPDB1'
+        project.ext.ownerPw = 'N2C3OWNER'
+        project.ext.plsqlPw = 'n2c3_plsql'
+    }
+
+    if (environment == 'dev'){
+        project.ext.dbUrl = 'jdbc:oracle:thin:@//hkgcvdv00174.oocl.com:1521/n2c3.oocl'
+    }
+
+    if (environment == 'snapshot'){
+        project.ext.dbUrl = 'jdbc:oracle:thin:@//sjfwoas2.oocl.com:1521/ORCLPDB1'
+    }
+
+    if (environment == 'uat'){
+        project.ext.dbUrl = 'jdbc:oracle:thin:@//hkgcvdv00106.oocl.com:1521/n2c3uat.oocl'
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src/main/java'
+        }
+    }
+    test {
+        java {
+            srcDir 'src/test/java'
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+dependencies {
+    compile 'org.springframework.boot:spring-boot-starter-web'
+    compile 'org.springframework.boot:spring-boot-starter-data-jpa'
+    compile 'org.springframework.boot:spring-boot-devtools'
+    compile 'org.springframework.boot:spring-boot-configuration-processor'
+    compile 'org.springframework.boot:spring-boot-starter-actuator'
+
+    compile 'com.opencsv:opencsv:3.9'
+    compile 'com.google.code.gson:gson'
+    compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv:2.9.0'
+    compile 'com.microsoft.sqlserver:mssql-jdbc:6.1.0.jre8'
+
+    compileOnly 'org.projectlombok:lombok'
+
+    testCompile 'org.springframework.boot:spring-boot-starter-test'
+    testCompile 'org.assertj:assertj-core'
+    testCompileOnly 'org.projectlombok:lombok'
+}
+
+test {
+    beforeTest { descriptor ->
+        logger.lifecycle("Running test: ${descriptor}")
+    }
+}
+
+tasks.withType(Test) {
+    reports.html.setDestination(file("${reporting.baseDir}/${name}"))
+}
