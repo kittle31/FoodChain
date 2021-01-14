@@ -9,4 +9,16 @@ spring:
     url: jdbc:sqlserver://DbServer01;databaseName=FoodChain
     username: jon
     password: elmer
+server:
+  port: 9090
+
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: DEBUG
+        type:
+          descriptor:
+            sql:
+              BasicBinder: TRACE
 

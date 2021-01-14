@@ -3,15 +3,28 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
     mode: 'development',
-    entry: './src/main/js/app/app.js',
+    entry: ["@babel/polyfill",'./src/main/js/app/app.js'],
     devtool: 'inline-source-map',
     devServer: {
-        contentBase: './dist',
+        hot: true,
+        contentBase: [path.resolve(__dirname, 'src/main/resources/static')],
+        publicPath: '/',
+        proxy: {
+            '/api/*': {
+                //route ui dev-server which is on 8080 requests to the 9090 where backend server runs
+                target: 'http://localhost:9090',
+                secure: false
+            },
+            '/': {
+                //serve the index.html from the server
+                target: 'http://localhost:9090',
+                secure: false
+            }
+        }
     },
     plugins: [
         new HtmlWebpackPlugin({
-            filename: 'index.html',
-            title: 'Development',
+            template: path.resolve(__dirname, "src/main/resources/static/index.html")
         }),
     ],
     output: {

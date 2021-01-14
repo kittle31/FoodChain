@@ -1,16 +1,7 @@
 import React from "react"
-import {Redirect, withRouter} from 'react-router-dom'
-import ReactTooltip from 'react-tooltip'
 
-import {colors} from "../../utils/styles"
-import {getGlobalStore} from "../../state/globalStore"
-import {merge} from "../../utils/util"
-import {connect} from "react-redux"
-import {bindActionCreators} from "redux"
-import {logout} from "../../state/app/actions"
-import * as types from "../../state/actionTypes"
-import {dragElement} from "../../utils/dragable"
-import ClickableIcon from "./ClickableIcon"
+import {colors} from "../utils/styles"
+import {dragElement} from "../utils/dragable"
 
 const titleBarStyle = {
   display: 'flex',
@@ -69,45 +60,10 @@ const finePrint = {
 }
 
 export class TitleBar extends React.Component {
-  // TODO we need to determine the path for embedded detail panels - also, it doesn't make sense to go back
-  handleNewTab(history, location, url) {
-    if (!this.props.embedded) {
-      history.goBack()
-    }
-    else {
-      this.handleClose()
-    }
-    //TODO: check if you can use Link or Redirect instead of calling window.open directly
-    if (url) {
-      window.open('#' + url, '_blank')
-    } else {
-      window.open('#' + location.pathname, '_blank')
-    }
-  }
 
   handleClose() {
-    if (this.props.closeAction)
-      getGlobalStore().dispatch({type: this.props.closeAction})
     if (this.props.closeFn)
       this.props.closeFn()
-  }
-
-  toggleRemarkBar() {
-    getGlobalStore().dispatch({type: types.TOGGLE_REMARK_BAR})
-  }
-
-  getMailIcon(showMail) {
-    if (!showMail) {
-      return null
-    }
-    if (this.props.myRemarks && this.props.myRemarks.length) {
-      return <ClickableIcon iconPath="images/notification-white.svg"
-                            actionType={types.TOGGLE_REMARK_BAR}
-                            buttonClassName="mail-icon"
-                            hoverIconPath="images/notification-default.svg" toolTipText={"Notifications"} />
-    } else {
-      return null
-    }
   }
 
   componentDidMount(){
@@ -129,47 +85,20 @@ export class TitleBar extends React.Component {
     }
   }
 
-  componentWillUnmount() {
-    ReactTooltip.hide()
-  }
-
   getButtons() {
-    const {history, location, url, showCloseButton, showMailIcon} = this.props
-    let showClose = false, showMail=true
+    const {showCloseButton} = this.props
+    let showClose = false
     showClose = showCloseButton !== undefined ? showCloseButton : showClose
-    showMail = showMailIcon !== undefined ? showMailIcon: showMail
-    let iconStyle = {height: 26, width: 26 }
 
     return (
         <span className='titlebar-buttons' style={{display: 'flex', alignItems: 'center', paddingLeft: '10px'}}>
-
-          {url && <span id="new-tab" style={buttonStyle}
-                onClick={this.handleNewTab.bind(this, history, location, url)}
-                data-tip={"Open As New Tab"}>
-            <img src="images/open-new-tab.svg" style={iconStyle}/>
-          </span>}
-          {showClose && <span id="close" style={exitStyle} onClick={this.handleClose.bind(this)}
-                             data-tip={"Close"}>✕</span>}
-          {this.getMailIcon(showMail)}
-
-          <ReactTooltip class="icon-tooltip" place="bottom" effect="solid" offset={{bottom: -8, right: 2}}/>
+          {showClose && <span id="close" style={exitStyle} onClick={this.handleClose.bind(this)} data-tip={"Close"}>âœ•</span>}
         </span>
     )
   }
 
-  goBack() {
-    if (this.props.backUrl) {
-      this.setState({goBackClicked: true})
-    } else {
-      this.props.history.goBack()
-    }
-  }
-
   render() {
-    if (this.state && this.state.goBackClicked) {
-      return <Redirect push to={this.props.backUrl}/>
-    }
-    let {title, subtitles, fineprint, rightDetails, embedded, titleStyle, showBackButton, delimiter} = this.props
+    let {title, subtitles, fineprint, rightDetails, embedded, showBackButton, delimiter} = this.props
     let backButton=false
     let delimiterToUse = delimiter ? delimiter : '|'
     const getSubtitles = subtitles && subtitles.map((s, i) => (
@@ -185,12 +114,7 @@ export class TitleBar extends React.Component {
     backButton = showBackButton !== undefined ? showBackButton : backButton
 
     return (
-      <div className="titleBar" style={merge(titleBarStyle, titleStyle)}>
-        {backButton &&
-        <span className="exit" style={backButtonStyle} onClick={this.goBack.bind(this)}>
-          <img src="images/back.svg"/>
-        </span>}
-
+      <div className="titleBar" style={titleBarStyle}>
         <span style={flexMiddle}>
           <div style={headerLeft}>
             <div>
@@ -205,26 +129,9 @@ export class TitleBar extends React.Component {
           <div className="h2" style={{display: 'flex', alignItems: 'center'}}>
             {getRightDetails}
           </div>
+          {this.getButtons()}
         </span>
-
-        {this.getButtons()}
       </div>
     )
   }
 }
-
-function mapStateToProps(state) {
-  return {
-    myRemarks: state.app.myRemarks
-  }
-}
-
-function mapDispatchToProps(dispatch) {
-  return {
-    actions: bindActionCreators({
-      logout
-    }, dispatch)
-  }
-}
-
-export default connect(mapStateToProps, mapDispatchToProps)(withRouter(TitleBar))
